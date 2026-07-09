@@ -6,6 +6,7 @@ from utils import load_all_documents
 import os
 load_dotenv()
 docs=load_all_documents('data')
+print(type(docs))
 chunks=RecursiveCharacterTextSplitter(chunk_size=500,chunk_overlap=100).split_documents(docs)
 emb=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
 db=FAISS.from_documents(chunks,emb)
