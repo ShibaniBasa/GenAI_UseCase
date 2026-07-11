@@ -1,3 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual Environment
+RAG_Project/venv/
+venv/
+
+# Temporary Microsoft Office files
+~$*
+
+# Environment Variables
 .env
-RAG_Project.zip
-__pycache__
+
+# VS Code
+.vscode/

@@ -1,8 +1,9 @@
 import os
 
 from langchain_core.documents import Document
-
 from docling.document_converter import DocumentConverter
+
+from metadata import get_metadata
 
 
 converter = DocumentConverter()
@@ -18,11 +19,14 @@ def create_document(file_path):
 
     text = result.document.export_to_markdown()
 
+    # -----------------------------
+    # Load metadata from metadata.json
+    # -----------------------------
+    metadata = get_metadata(filename)
+
     return Document(
         page_content=text,
-        metadata={
-            "source_file": filename
-        }
+        metadata=metadata
     )
 
 
@@ -38,12 +42,13 @@ def load_all_documents(folder):
 
             try:
 
-                documents.append(create_document(path))
+                document = create_document(path)
+
+                documents.append(document)
 
             except Exception as e:
 
                 print(f"Skipping {file}")
-
                 print(e)
 
     return documents

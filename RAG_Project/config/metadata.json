@@ -1,0 +1,26 @@
+{
+  "Python_Scratch_to_Advanced.pdf": {
+    "language": "Python",
+    "document_type": "Roadmap",
+    "level": "Beginner-Advanced",
+    "format": "PDF"
+  },
+  "Java_Scratch_to_Advanced.xlsx": {
+    "language": "Java",
+    "document_type": "Roadmap",
+    "level": "Beginner-Advanced",
+    "format": "XLSX"
+  },
+  "C_Scratch_to_Advanced.docx": {
+    "language": "C",
+    "document_type": "Roadmap",
+    "level": "Beginner-Advanced",
+    "format": "DOCX"
+  },
+  "CPP_Unstructured_Data.docx": {
+    "language": "CPP",
+    "document_type": "Notes",
+    "level": "Mixed",
+    "format": "DOCX"
+  }
+}

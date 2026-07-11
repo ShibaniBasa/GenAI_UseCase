@@ -1,34 +1,20 @@
-
 import os
 
 from dotenv import load_dotenv
-
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
 
+from query_filter import extract_filters
 
-# ----------------------------------------------------
-# Load Environment Variables
-# ----------------------------------------------------
 
 load_dotenv()
-
-
-# ----------------------------------------------------
-# Load Embedding Model
-# ----------------------------------------------------
 
 print("Loading Embedding Model...")
 
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
-
-
-# ----------------------------------------------------
-# Load FAISS Vector Store
-# ----------------------------------------------------
 
 print("Loading Vector Store...")
 
@@ -39,11 +25,6 @@ vector_store = FAISS.load_local(
 )
 
 print("Vector Store Loaded Successfully.")
-
-
-# ----------------------------------------------------
-# Load LLM
-# ----------------------------------------------------
 
 print("Loading LLM...")
 
@@ -57,38 +38,74 @@ print("RAG Ready!")
 print("-" * 80)
 
 
-# ====================================================
-# Chat Loop
-# ====================================================
+def filter_documents(documents, filters):
+
+    if not filters:
+        return documents
+
+    filtered_docs = []
+
+    for doc in documents:
+
+        matched = True
+
+        for key, value in filters.items():
+
+            metadata_value = doc.metadata.get(key)
+
+            if metadata_value is None:
+                matched = False
+                break
+
+            if str(metadata_value).lower() != str(value).lower():
+                matched = False
+                break
+
+        if matched:
+            filtered_docs.append(doc)
+
+    return filtered_docs
+
 
 while True:
 
-    question = input("\nAsk Question (type 'exit' to quit): ").strip()
+    question = input(
+        "\nAsk Question (type 'exit' to quit): "
+    ).strip()
 
     if question.lower() == "exit":
         break
 
-    # ------------------------------------------------
-    # Retrieve Relevant Chunks
-    # ------------------------------------------------
+    filters = extract_filters(question)
+
+    print("\nDetected Filters")
+
+    if filters:
+
+        for key, value in filters.items():
+            print(f"{key}: {value}")
+
+    else:
+
+        print("No metadata filters detected.")
 
     retrieved_docs = vector_store.similarity_search(
         question,
-        k=2
+        k=20
     )
 
+    retrieved_docs = filter_documents(
+        retrieved_docs,
+        filters
+    )
+
+    retrieved_docs = retrieved_docs[:2]
+
     if not retrieved_docs:
-        print("\nNo relevant information found.")
+
+        print("\nNo matching documents found.")
+
         continue
-
-    # ------------------------------------------------
-    # Display Retrieved Chunks
-    # ------------------------------------------------
-
-    #print("\n")
-    #print("=" * 80)
-    #print("RETRIEVED CHUNKS")
-    #print("=" * 80)
 
     context = ""
 
@@ -96,32 +113,57 @@ while True:
 
     for i, doc in enumerate(retrieved_docs, start=1):
 
-        source = doc.metadata.get("source_file", "Unknown")
+        source = doc.metadata.get(
+            "source_file",
+            "Unknown"
+        )
 
         source_files.add(source)
 
-        #print(f"\nChunk {i}")
-        #print("-" * 50)
-        #print(f"Source : {source}\n")
-        #print(doc.page_content[:700])
-        #print()
+        language = doc.metadata.get(
+            "language",
+            "Unknown"
+        )
+
+        document_type = doc.metadata.get(
+            "document_type",
+            "Unknown"
+        )
+
+        level = doc.metadata.get(
+            "level",
+            "Unknown"
+        )
+
+        file_format = doc.metadata.get(
+            "format",
+            "Unknown"
+        )
 
         context += f"""
-Document {i}
+        Document {i}
 
 Source File:
 {source}
 
+Language:
+{language}
+
+Document Type:
+{document_type}
+
+Level:
+{level}
+
+Format:
+{file_format}
+
 Content:
+
 {doc.page_content}
 
 """
-
-    # ------------------------------------------------
-    # Prompt
-    # ------------------------------------------------
-
-    prompt = f"""
+prompt = f"""
 You are a helpful Programming Assistant.
 
 Answer ONLY using the information provided in the context.
@@ -156,31 +198,35 @@ Question:
 Answer:
 """
 
-    # ------------------------------------------------
-    # Generate Response
-    # ------------------------------------------------
+response = llm.invoke(prompt)
 
-    response = llm.invoke(prompt)
+print("\n")
+print("=" * 80)
+print("ANSWER")
+print("=" * 80)
 
-    # ------------------------------------------------
-    # Print Answer
-    # ------------------------------------------------
+print(response.content)
 
-    print("\n")
-    print("=" * 80)
-    print("ANSWER")
-    print("=" * 80)
+print("\n")
+print("=" * 80)
+print("SOURCE FILES")
+print("=" * 80)
 
-    print(response.content)
-
-    # ------------------------------------------------
-    # Print Sources
-    # ------------------------------------------------
-
-    print("\n")
-    print("=" * 80)
-    print("SOURCE FILES")
-    print("=" * 80)
-
-    for source in sorted(source_files):
+for source in sorted(source_files):
         print(f"- {source}")
+
+print("\n")
+print("=" * 80)
+print("DOCUMENT METADATA")
+print("=" * 80)
+
+for i, doc in enumerate(retrieved_docs, start=1):
+
+        print(f"\nDocument {i}")
+
+        for key, value in doc.metadata.items():
+
+            print(f"{key}: {value}")
+   
+
+print("\nApplication Closed.")
