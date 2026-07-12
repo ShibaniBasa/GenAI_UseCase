@@ -2,12 +2,18 @@ import json
 import os
 import re
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 CONFIG_PATH = os.path.join(
+    BASE_DIR,
     "config",
     "metadata.json"
 )
 
-with open(CONFIG_PATH, "r") as f:
+print("CONFIG:", CONFIG_PATH)
+print("Exists:", os.path.exists(CONFIG_PATH))
+
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     METADATA = json.load(f)
 
 

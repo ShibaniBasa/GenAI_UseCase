@@ -23,7 +23,14 @@ load_dotenv()
 
 print("Loading documents...")
 
-documents = load_all_documents("data")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DATA_FOLDER = os.path.join(BASE_DIR, "data")
+
+print("DATA PATH:", DATA_FOLDER)
+print("DATA EXISTS:", os.path.exists(DATA_FOLDER))
+
+documents = load_all_documents(DATA_FOLDER)
 
 print(f"{len(documents)} documents loaded.")
 
@@ -52,7 +59,9 @@ semantic_splitter = SemanticChunker(
 
 # Split Document objects while preserving metadata
 chunks = semantic_splitter.split_documents(documents)
-
+print("Chunks created:", len(chunks))
+for chunk in chunks[:3]:   
+    print(chunk.metadata)
 print(f"{len(chunks)} semantic chunks created.")
 
 
@@ -80,6 +89,6 @@ vector_store = Chroma.from_documents(
 )
 
 print("Vector Store Created Successfully!")
-
+ 
 print(f"Total Documents : {len(documents)}")
 print(f"Total Chunks    : {len(chunks)}")

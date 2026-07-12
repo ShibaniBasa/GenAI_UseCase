@@ -2,7 +2,6 @@ import os
 
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
-#from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
 
@@ -19,17 +18,13 @@ embedding_model = HuggingFaceEmbeddings(
 
 print("Loading Vector Store...")
 
-
 vector_store = Chroma(
-
     persist_directory="vector_store",
-
     embedding_function=embedding_model
-
 )
 
 print("Vector Store Loaded Successfully.")
-
+print("Total Chunks in Chroma:", vector_store._collection.count())
 print("Loading LLM...")
 
 llm = ChatGroq(
@@ -42,38 +37,11 @@ print("RAG Ready!")
 print("-" * 80)
 
 
-def filter_documents(documents, filters):
-
-    if not filters:
-        return documents
-
-    filtered_docs = []
-
-    for doc in documents:
-
-        matched = True
-
-        for key, value in filters.items():
-
-            metadata_value = doc.metadata.get(key)
-
-            if metadata_value is None:
-                matched = False
-                break
-
-            if str(metadata_value).lower() != str(value).lower():
-                matched = False
-                break
-
-        if matched:
-            filtered_docs.append(doc)
-
-    return filtered_docs
-
-
 while True:
 
-    question = input("\nAsk Question (type 'exit' to quit): ").strip()
+    question = input(
+        "\nAsk Question (type 'exit' to quit): "
+    ).strip()
 
     if question.lower() == "exit":
         print("\nApplication Closed.")
@@ -84,14 +52,17 @@ while True:
     print("\nDetected Filters")
 
     if filters:
+
         for key, value in filters.items():
             print(f"{key}: {value}")
+
     else:
+
         print("No metadata filters detected.")
 
-    # ----------------------------------------------------
-    # Retrieve documents
-    # ----------------------------------------------------
+    print("\nSearching documents...")
+    
+
 
     if filters:
 
@@ -105,21 +76,18 @@ while True:
 
         retrieved_docs = vector_store.similarity_search(
             query=question,
-            k=2
+            k=5
         )
 
-    print(f"\nRetrieved {len(retrieved_docs)} document(s).\n")
+    print(f"Retrieved {len(retrieved_docs)} document(s).")
 
     if not retrieved_docs:
 
-        print("No matching documents found.")
+        print("\nNo matching documents found.")
         continue
 
-    # ----------------------------------------------------
-    # Build Context
-    # ----------------------------------------------------
-
     context = ""
+
     source_files = set()
 
     for i, doc in enumerate(retrieved_docs, start=1):
@@ -136,26 +104,22 @@ Source File:
 {source}
 
 Language:
-{doc.metadata.get('language', 'Unknown')}
+{doc.metadata.get("language", "Unknown")}
 
 Document Type:
-{doc.metadata.get('document_type', 'Unknown')}
+{doc.metadata.get("document_type", "Unknown")}
 
 Level:
-{doc.metadata.get('level', 'Unknown')}
+{doc.metadata.get("level", "Unknown")}
 
 Format:
-{doc.metadata.get('format', 'Unknown')}
+{doc.metadata.get("format", "Unknown")}
 
 Content:
 
 {doc.page_content}
 
 """
-
-    # ----------------------------------------------------
-    # Prompt
-    # ----------------------------------------------------
 
     prompt = f"""
 You are a Programming Assistant.
@@ -166,9 +130,9 @@ Rules:
 
 1. Never use outside knowledge.
 
-2. Answer only from the context.
+2. Answer only from the provided context.
 
-3. If the answer is not present, reply exactly:
+3. If the answer is not available in the context, reply exactly:
 
 I don't have enough information in the provided documents.
 
@@ -191,13 +155,13 @@ Answer:
     print("=" * 80)
     print(response.content)
 
-    #print("\n")
-    #print("=" * 80)
-    #print("SOURCE FILES")
-    #print("=" * 80)
+    print("\n")
+    print("=" * 80)
+    print("SOURCE FILES")
+    print("=" * 80)
 
-    #for source in sorted(source_files):
-        #print(f"- {source}")
+    for source in sorted(source_files):
+        print(f"- {source}")
 
     print("\n")
     print("=" * 80)
@@ -210,5 +174,3 @@ Answer:
 
         for key, value in doc.metadata.items():
             print(f"{key}: {value}")
-            break
-    break

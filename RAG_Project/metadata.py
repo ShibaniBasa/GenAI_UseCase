@@ -4,11 +4,14 @@ import os
 # ----------------------------------------------------
 # Load Metadata Configuration
 # ----------------------------------------------------
-
+BASE_DIR=os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(
+    BASE_DIR,
     "config",
     "metadata.json"
 )
+print("CONFIG",CONFIG_PATH)
+print("File exists",os.path.exists(CONFIG_PATH))
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     METADATA = json.load(f)
