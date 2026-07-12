@@ -2,8 +2,9 @@ import os
 
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+#from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
+from langchain_chroma import Chroma
 
 from query_filter import extract_filters
 
@@ -18,10 +19,13 @@ embedding_model = HuggingFaceEmbeddings(
 
 print("Loading Vector Store...")
 
-vector_store = FAISS.load_local(
-    "vector_store",
-    embedding_model,
-    allow_dangerous_deserialization=True
+
+vector_store = Chroma(
+
+    persist_directory="vector_store",
+
+    embedding_function=embedding_model
+
 )
 
 print("Vector Store Loaded Successfully.")

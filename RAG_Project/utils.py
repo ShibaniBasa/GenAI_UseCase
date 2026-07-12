@@ -15,9 +15,10 @@ def create_document(file_path):
 
     print(f"Reading {filename}")
 
-    result = converter.convert(file_path)
+    result = converter.convert(file_path) #it returns a python object which we can access using . operator
 
     text = result.document.export_to_markdown()
+    
 
     # -----------------------------
     # Load metadata from metadata.json

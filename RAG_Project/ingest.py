@@ -1,5 +1,5 @@
 import os
-import shutil
+import shutil                  #shutil stands for Shell Utilities, python built in modules high-level file and folder operations like copying, moving, and deleting.
 
 from dotenv import load_dotenv
 
@@ -9,7 +9,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from langchain_community.vectorstores import FAISS
+from langchain_chroma import Chroma
 
 
 load_dotenv()
@@ -64,15 +64,14 @@ if os.path.exists("vector_store"):
 
     shutil.rmtree("vector_store")
 
+vector_store = Chroma.from_documents(
 
-vector_store = FAISS.from_documents(
+    documents=chunks,
 
-    chunks,
+    embedding=embedding_model,
 
-    embedding_model
+    persist_directory="vector_store"
 
 )
-
-vector_store.save_local("vector_store")
 
 print("Vector Store Created.")
