@@ -73,11 +73,10 @@ def filter_documents(documents, filters):
 
 while True:
 
-    question = input(
-        "\nAsk Question (type 'exit' to quit): "
-    ).strip()
+    question = input("\nAsk Question (type 'exit' to quit): ").strip()
 
     if question.lower() == "exit":
+        print("\nApplication Closed.")
         break
 
     filters = extract_filters(question)
@@ -85,111 +84,93 @@ while True:
     print("\nDetected Filters")
 
     if filters:
-
         for key, value in filters.items():
             print(f"{key}: {value}")
+    else:
+        print("No metadata filters detected.")
+
+    # ----------------------------------------------------
+    # Retrieve documents
+    # ----------------------------------------------------
+
+    if filters:
+
+        retrieved_docs = vector_store.similarity_search(
+            query=question,
+            k=5,
+            filter=filters
+        )
 
     else:
 
-        print("No metadata filters detected.")
+        retrieved_docs = vector_store.similarity_search(
+            query=question,
+            k=2
+        )
 
-    retrieved_docs = vector_store.similarity_search(
-        question,
-        k=20
-    )
-
-    retrieved_docs = filter_documents(
-        retrieved_docs,
-        filters
-    )
-
-    retrieved_docs = retrieved_docs[:2]
+    print(f"\nRetrieved {len(retrieved_docs)} document(s).\n")
 
     if not retrieved_docs:
 
-        print("\nNo matching documents found.")
-
+        print("No matching documents found.")
         continue
 
-    context = ""
+    # ----------------------------------------------------
+    # Build Context
+    # ----------------------------------------------------
 
+    context = ""
     source_files = set()
 
     for i, doc in enumerate(retrieved_docs, start=1):
 
-        source = doc.metadata.get(
-            "source_file",
-            "Unknown"
-        )
+        source = doc.metadata.get("source_file", "Unknown")
 
         source_files.add(source)
 
-        language = doc.metadata.get(
-            "language",
-            "Unknown"
-        )
-
-        document_type = doc.metadata.get(
-            "document_type",
-            "Unknown"
-        )
-
-        level = doc.metadata.get(
-            "level",
-            "Unknown"
-        )
-
-        file_format = doc.metadata.get(
-            "format",
-            "Unknown"
-        )
-
         context += f"""
-        Document {i}
+
+Document {i}
 
 Source File:
 {source}
 
 Language:
-{language}
+{doc.metadata.get('language', 'Unknown')}
 
 Document Type:
-{document_type}
+{doc.metadata.get('document_type', 'Unknown')}
 
 Level:
-{level}
+{doc.metadata.get('level', 'Unknown')}
 
 Format:
-{file_format}
+{doc.metadata.get('format', 'Unknown')}
 
 Content:
 
 {doc.page_content}
 
 """
-prompt = f"""
-You are a helpful Programming Assistant.
 
-Answer ONLY using the information provided in the context.
+    # ----------------------------------------------------
+    # Prompt
+    # ----------------------------------------------------
+
+    prompt = f"""
+You are a Programming Assistant.
+
+Answer ONLY using the provided context.
 
 Rules:
 
-1. Do NOT use outside knowledge.
+1. Never use outside knowledge.
 
-2. Ignore any information that is not relevant to the user's question.
+2. Answer only from the context.
 
-3. If multiple documents contain relevant information,
-combine them into one clear answer.
-
-4. If the answer is only partially available,
-provide only the available information.
-
-5. If the answer is NOT present in the context,
-reply exactly with:
+3. If the answer is not present, reply exactly:
 
 I don't have enough information in the provided documents.
-
-6. Do not hallucinate.
 
 Context:
 
@@ -202,35 +183,32 @@ Question:
 Answer:
 """
 
-response = llm.invoke(prompt)
+    response = llm.invoke(prompt)
 
-print("\n")
-print("=" * 80)
-print("ANSWER")
-print("=" * 80)
+    print("\n")
+    print("=" * 80)
+    print("ANSWER")
+    print("=" * 80)
+    print(response.content)
 
-print(response.content)
+    #print("\n")
+    #print("=" * 80)
+    #print("SOURCE FILES")
+    #print("=" * 80)
 
-print("\n")
-print("=" * 80)
-print("SOURCE FILES")
-print("=" * 80)
+    #for source in sorted(source_files):
+        #print(f"- {source}")
 
-for source in sorted(source_files):
-        print(f"- {source}")
+    print("\n")
+    print("=" * 80)
+    print("DOCUMENT METADATA")
+    print("=" * 80)
 
-print("\n")
-print("=" * 80)
-print("DOCUMENT METADATA")
-print("=" * 80)
-
-for i, doc in enumerate(retrieved_docs, start=1):
+    for i, doc in enumerate(retrieved_docs, start=1):
 
         print(f"\nDocument {i}")
 
         for key, value in doc.metadata.items():
-
             print(f"{key}: {value}")
-   
-
-print("\nApplication Closed.")
+            break
+    break
