@@ -1,0 +1,42 @@
+
+/* Main App */
+.stApp {
+    background-color: #171718;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #1E293B;
+}
+
+section[data-testid="stSidebar"] * {
+    color: black;
+}
+
+/* Title */
+h1 {
+    color: #1E3A8A;
+    font-weight: bold;
+}
+
+/* Chat Input */
+.stChatInput {
+    border-radius: 12px;
+}
+
+/* Buttons */
+.stButton > button {
+    width: 100%;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+/* Success Box */
+div[data-testid="stAlert"] {
+    border-radius: 10px;
+}
+
+/* Info Box */
+div[data-testid="stMarkdownContainer"] {
+    font-size: 16px;
+}

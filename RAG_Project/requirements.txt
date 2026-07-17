@@ -20,3 +20,5 @@ docling-core
 python-docx
 docx2txt
 pypdf
+fastapi
+uvicorn

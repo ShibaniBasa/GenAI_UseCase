@@ -12,7 +12,8 @@ venv/
 # Environment Variables
 .env
 
+
 # VS Code
 .vscode/
-
+rag_test.py
 RAG_Project.zip
