@@ -1,12 +1,10 @@
 import os
-
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
-
 from query_filter import extract_filters
-
+from memory import memory
 
 load_dotenv()
 
@@ -30,21 +28,15 @@ def initialize_rag():
             "Vector store not found. Please run ingest.py before starting rag.py."
         )
 
-    print("Loading Embedding Model...")
     embedding_model = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    print("Loading Vector Store...")
     vector_store = Chroma(
         persist_directory=VECTOR_STORE_PATH,
         embedding_function=embedding_model
     )
 
-    print("Vector Store Loaded Successfully.")
-    print("Total Chunks in Chroma:", vector_store._collection.count())
-
-    print("Loading LLM...")
     llm = ChatGroq(
         groq_api_key=os.getenv("GROQ_API_KEY"),
         model_name="llama-3.3-70b-versatile",
@@ -53,8 +45,6 @@ def initialize_rag():
     )
 
     _initialized = True
-    print("RAG Ready!")
-    print("-" * 80)
 
 
 def build_context(retrieved_docs):
@@ -62,11 +52,11 @@ def build_context(retrieved_docs):
     source_files = set()
 
     for i, doc in enumerate(retrieved_docs, start=1):
+
         source = doc.metadata.get("source_file", "Unknown")
         source_files.add(source)
 
         context += f"""
-
 Document {i}
 
 Source File:
@@ -85,7 +75,6 @@ Format:
 {doc.metadata.get("format", "Unknown")}
 
 Content:
-
 {doc.page_content}
 
 """
@@ -93,7 +82,8 @@ Content:
     return context, sorted(source_files)
 
 
-def get_answer(question):
+def get_answer(question, session_id="default"):
+
     initialize_rag()
 
     question = (question or "").strip()
@@ -120,41 +110,68 @@ def get_answer(question):
 
     context, _ = build_context(retrieved_docs)
 
+    chat_history = memory.get_history(session_id)
+
+    history_text = ""
+
+    for msg in chat_history:
+        history_text += f"{msg['role']}: {msg['content']}\n"
+
     prompt = f"""
 You are a Programming Assistant.
 
-Answer ONLY using the provided context.
+Use:
+1. Previous Conversation History
+2. Retrieved Context
 
 Rules:
-
-1. Never use outside knowledge.
-
-2. Answer only from the provided context.
-
-3. If the answer is not available in the context, reply exactly:
+- Use chat history when the user asks follow-up questions.
+- If information is not available in the context, say:
 
 I don't have enough information in the provided documents.
 
-Context:
+Conversation History:
+{history_text}
 
+Context:
 {context}
 
 Question:
-
 {question}
 
 Answer:
 """
 
     response = llm.invoke(prompt)
-    return response.content.strip()
+
+    answer = response.content.strip()
+
+    memory.add_message(
+        session_id,
+        "User",
+        question
+    )
+
+    memory.add_message(
+        session_id,
+        "Assistant",
+        answer
+    )
+
+    return answer
 
 
 def run_console_app():
+
     initialize_rag()
 
+    session_id = "console_user"
+
     while True:
-        question = input("\nAsk Question (type 'exit' to quit): ").strip()
+
+        question = input(
+            "\nAsk Question (type 'exit' to quit): "
+        ).strip()
 
         if question.lower() == "exit":
             print("\nApplication Closed.")
@@ -163,8 +180,13 @@ def run_console_app():
         if not question:
             continue
 
+        answer = get_answer(
+            question,
+            session_id
+        )
+
         print("\nAnswer:\n")
-        print(get_answer(question))
+        print(answer)
 
 
 if __name__ == "__main__":
